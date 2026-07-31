@@ -234,6 +234,7 @@
     </div>
 
     <script>
+        const API_BASE = 'https://www.fizzybutterchiken.ca';
         let allRecords = [];
         let currentSecret = '';
         let selectedRecord = null;
@@ -253,7 +254,7 @@
 
             let loaded = false;
             try {
-                const response = await fetch('/api/admin?action=list', {
+                const response = await fetch(API_BASE + '/api/admin?action=list', {
                     headers: { 'Authorization': 'Bearer ' + secret }
                 });
 
@@ -381,7 +382,7 @@
             if (!adminName) return;
 
             try {
-                const res = await fetch('/api/admin?action=approve', {
+                const res = await fetch(API_BASE + '/api/admin?action=approve', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -411,7 +412,7 @@
             if (remarks === null) return;
 
             try {
-                const res = await fetch('/api/admin?action=reject', {
+                const res = await fetch(API_BASE + '/api/admin?action=reject', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -436,7 +437,7 @@
 
         function viewCard() {
             if (!selectedRecord) return;
-            window.open('/card-viewer?id=' + encodeURIComponent(selectedRecord.id), '_blank');
+            window.open(API_BASE + '/card-viewer?id=' + encodeURIComponent(selectedRecord.id), '_blank');
         }
 
         function updateUI() {
