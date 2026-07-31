@@ -1,23 +1,54 @@
 const { createClient } = require('@supabase/supabase-js');
-const nodemailer = require('nodemailer');
 
 // Hardcoded Configuration
 const SUPABASE_URL = 'https://drntuchxgbxullltmhih.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybnR1Y2h4Z2J4dWxsbHRtaGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTcxMTYsImV4cCI6MjEwMDUzMzExNn0.zTdr1QKl2aBTL8xd7vwgO-lLbX8UeD_af0Z6VZhLwuQ';
 const ADMIN_SECRET = 'admin123secret';
-const GMAIL_USER = 'fizzybutterchicken@gmail.com';
-const GMAIL_APP_PASS = 'eplhcnvwlkdkbtdz';
+const RESEND_API_KEY = 're_gjT3mgDT_Nbap2MJB93ZC33r6d4veS5RD';
+const FROM_EMAIL = "Fizzy's Butter Chicken <onboarding@resend.dev>";
+const ADMIN_EMAIL = 'fizzybutterchicken@gmail.com';
+const OWNER_EMAIL = '42092@iqraisb.edu.pk';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASS
+async function sendResendEmail({ to, subject, html }) {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: Array.isArray(to) ? to : [to],
+        reply_to: ADMIN_EMAIL,
+        subject,
+        html
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.message && data.message.includes('only send testing emails')) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: FROM_EMAIL,
+            to: [OWNER_EMAIL],
+            reply_to: ADMIN_EMAIL,
+            subject: `[Notification for ${Array.isArray(to) ? to.join(', ') : to}] ${subject}`,
+            html
+          })
+        });
+      }
     }
-  });
+  } catch (err) {
+    console.warn('Resend API notice:', err.message);
+  }
 }
 
 function verifyAuth(req) {
@@ -88,38 +119,32 @@ module.exports = async (req, res) => {
           return res.status(500).json({ error: error.message });
         }
 
-        // Trigger approval email to guest
+        // Trigger approval email to guest via Resend API
         if (data && data.email) {
-          try {
-            const transporter = getTransporter();
-            const host = req.headers.host || 'fizzybutterchicken.vercel.app';
-            const passUrl = `https://${host}/card-viewer.html?id=${data.id}`;
+          const host = req.headers.host || 'fizzybutterchicken.vercel.app';
+          const passUrl = `https://${host}/card-viewer.html?id=${data.id}`;
 
-            await transporter.sendMail({
-              from: `"Fizzy's Butter Chicken" <${GMAIL_USER}>`,
-              to: data.email,
-              subject: `🎉 Reservation Approved! Your Pass for Fizzy's Butter Chicken`,
-              html: `
-                <div style="font-family: Arial, sans-serif; padding: 24px; color: #14100D; max-width: 600px; border: 1px solid #C89B3C; border-radius: 8px;">
-                  <h2 style="color: #C89B3C; margin-top: 0;">Reservation Approved!</h2>
-                  <p>Dear <strong>${data.name}</strong>,</p>
-                  <p>We are delighted to confirm your reservation at <strong>Fizzy's Butter Chicken</strong>!</p>
-                  <div style="background: #1F1915; color: #EDE6DA; padding: 16px; border-radius: 6px; margin: 20px 0;">
-                    <p style="margin: 4px 0;"><strong>Reservation ID:</strong> <span style="color: #C89B3C;">${data.id}</span></p>
-                    <p style="margin: 4px 0;"><strong>Date:</strong> ${data.reservation_date}</p>
-                    <p style="margin: 4px 0;"><strong>Time:</strong> ${data.reservation_time}</p>
-                    <p style="margin: 4px 0;"><strong>Guests:</strong> ${data.guests} guest(s)</p>
-                  </div>
-                  <p>View your official 3D Digital Entry Pass here:</p>
-                  <p><a href="${passUrl}" style="background-color: #C89B3C; color: #14100D; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Access Digital Pass</a></p>
-                  <br/>
-                  <p style="font-size: 12px; color: #777;">Please present your digital pass or QR code at check-in.</p>
+          await sendResendEmail({
+            to: data.email,
+            subject: `🎉 Reservation Approved! Your Pass for Fizzy's Butter Chicken`,
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 24px; color: #14100D; max-width: 600px; border: 1px solid #C89B3C; border-radius: 8px;">
+                <h2 style="color: #C89B3C; margin-top: 0;">Reservation Approved!</h2>
+                <p>Dear <strong>${data.name}</strong>,</p>
+                <p>We are delighted to confirm your reservation at <strong>Fizzy's Butter Chicken</strong>!</p>
+                <div style="background: #1F1915; color: #EDE6DA; padding: 16px; border-radius: 6px; margin: 20px 0;">
+                  <p style="margin: 4px 0;"><strong>Reservation ID:</strong> <span style="color: #C89B3C;">${data.id}</span></p>
+                  <p style="margin: 4px 0;"><strong>Date:</strong> ${data.reservation_date}</p>
+                  <p style="margin: 4px 0;"><strong>Time:</strong> ${data.reservation_time}</p>
+                  <p style="margin: 4px 0;"><strong>Guests:</strong> ${data.guests} guest(s)</p>
                 </div>
-              `
-            });
-          } catch (emailErr) {
-            console.warn('Approval email error:', emailErr.message);
-          }
+                <p>View your official 3D Digital Entry Pass here:</p>
+                <p><a href="${passUrl}" style="background-color: #C89B3C; color: #14100D; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Access Digital Pass</a></p>
+                <br/>
+                <p style="font-size: 12px; color: #777;">Please present your digital pass or QR code at check-in.</p>
+              </div>
+            `
+          });
         }
 
         return res.status(200).json({ ok: true, record: data });
@@ -140,27 +165,21 @@ module.exports = async (req, res) => {
           return res.status(500).json({ error: error.message });
         }
 
-        // Trigger rejection email to guest
+        // Trigger rejection email to guest via Resend API
         if (data && data.email) {
-          try {
-            const transporter = getTransporter();
-            await transporter.sendMail({
-              from: `"Fizzy's Butter Chicken" <${GMAIL_USER}>`,
-              to: data.email,
-              subject: `Update regarding your reservation request at Fizzy's Butter Chicken`,
-              html: `
-                <div style="font-family: Arial, sans-serif; padding: 24px; color: #14100D; max-width: 600px;">
-                  <h2 style="color: #8C3B2C;">Reservation Status Update</h2>
-                  <p>Dear <strong>${data.name}</strong>,</p>
-                  <p>Thank you for choosing Fizzy's Butter Chicken. Unfortunately, we are unable to confirm your reservation for ${data.reservation_date} at ${data.reservation_time}.</p>
-                  ${remarks ? `<p><strong>Reason / Note:</strong> ${remarks}</p>` : ''}
-                  <p>We apologize for the inconvenience. Please feel free to select another date or contact us directly at (705) 746-0505.</p>
-                </div>
-              `
-            });
-          } catch (emailErr) {
-            console.warn('Rejection email error:', emailErr.message);
-          }
+          await sendResendEmail({
+            to: data.email,
+            subject: `Update regarding your reservation request at Fizzy's Butter Chicken`,
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 24px; color: #14100D; max-width: 600px;">
+                <h2 style="color: #8C3B2C;">Reservation Status Update</h2>
+                <p>Dear <strong>${data.name}</strong>,</p>
+                <p>Thank you for choosing Fizzy's Butter Chicken. Unfortunately, we are unable to confirm your reservation for ${data.reservation_date} at ${data.reservation_time}.</p>
+                ${remarks ? `<p><strong>Reason / Note:</strong> ${remarks}</p>` : ''}
+                <p>We apologize for the inconvenience. Please feel free to select another date or contact us directly at (705) 746-0505.</p>
+              </div>
+            `
+          });
         }
 
         return res.status(200).json({ ok: true, record: data });

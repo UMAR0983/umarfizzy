@@ -1,17 +1,51 @@
-const nodemailer = require('nodemailer');
-
 // Hardcoded Configuration
-const GMAIL_USER = 'fizzybutterchicken@gmail.com';
-const GMAIL_APP_PASS = 'eplhcnvwlkdkbtdz';
+const RESEND_API_KEY = 're_gjT3mgDT_Nbap2MJB93ZC33r6d4veS5RD';
+const FROM_EMAIL = "Fizzy's Butter Chicken <onboarding@resend.dev>";
+const ADMIN_EMAIL = 'fizzybutterchicken@gmail.com';
+const OWNER_EMAIL = '42092@iqraisb.edu.pk';
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASS
+async function sendResendEmail({ to, subject, html }) {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: Array.isArray(to) ? to : [to],
+        reply_to: ADMIN_EMAIL,
+        subject,
+        html
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.message && data.message.includes('only send testing emails')) {
+        const fallbackRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: FROM_EMAIL,
+            to: [OWNER_EMAIL],
+            reply_to: ADMIN_EMAIL,
+            subject: `[For ${Array.isArray(to) ? to.join(', ') : to}] ${subject}`,
+            html
+          })
+        });
+        const fallbackData = await fallbackRes.json();
+        return { ok: fallbackRes.ok, id: fallbackData.id, fallback: true };
+      }
+      return { ok: false, error: data.message };
     }
-  });
+    return { ok: true, id: data.id };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 module.exports = async (req, res) => {
@@ -45,7 +79,6 @@ module.exports = async (req, res) => {
     }
 
     const host = req.headers.host || 'fizzybutterchicken.vercel.app';
-    const transporter = getTransporter();
 
     let subject = "Fizzy's Butter Chicken Reservation Update";
     let htmlContent = '';
@@ -80,7 +113,7 @@ module.exports = async (req, res) => {
           <p>View your official 3D Digital Entry Pass here:</p>
           <p><a href="${passUrl}" style="background-color: #C89B3C; color: #14100D; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Access Digital Pass</a></p>
           <br/>
-          <p style="font-size: 12px; color: #777;">Please present your digital pass or QR code at check-in. If you need to cancel or alter your reservation, call us at (705) 746-0505.</p>
+          <p style="font-size: 12px; color: #777;">Please present your digital pass or QR code at check-in.</p>
         </div>
       `;
     } else if (type === 'rejection') {
@@ -109,23 +142,13 @@ module.exports = async (req, res) => {
       htmlContent = `<p>Hello ${guestName}, thank you for contacting Fizzy's Butter Chicken.</p>`;
     }
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"Fizzy's Butter Chicken" <${GMAIL_USER}>`,
-        to: recipientEmail,
-        subject,
-        html: htmlContent
-      });
-      return res.status(200).json({ ok: true, sent: true, messageId: info.messageId });
-    } catch (sendErr) {
-      console.warn('SMTP Transmission notice:', sendErr.message);
-      return res.status(200).json({
-        ok: true,
-        sent: false,
-        notice: 'Email queued/processed cleanly.',
-        error: sendErr.message
-      });
-    }
+    const result = await sendResendEmail({
+      to: recipientEmail,
+      subject,
+      html: htmlContent
+    });
+
+    return res.status(200).json({ ok: result.ok, id: result.id, fallback: result.fallback, error: result.error });
   } catch (err) {
     console.error('Send email API error:', err);
     return res.status(500).json({ error: err.message || 'Failed to send email' });
