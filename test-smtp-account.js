@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-const appPass = 'yvmssiucnnanpeb';
+const appPass = 'eplhcnvwlkdkbtdz';
 const accounts = [
   'fizzybutterchicken@gmail.com',
   'umarkhatabmalik2156@gmail.com',
@@ -8,25 +8,46 @@ const accounts = [
 ];
 
 async function testAccounts() {
-  console.log('Testing which Google account matches App Password: yvmssiucnnanpeb...\n');
+  console.log('Testing App Password: eplhcnvwlkdkbtdz for fizzybutterchicken@gmail.com...\n');
 
-  for (const account of accounts) {
-    console.log(`Testing authentication for: ${account}...`);
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: account,
-        pass: appPass
-      }
-    });
-
-    try {
-      await transporter.verify();
-      console.log(`🎉 SUCCESS! The 16-character App Password matches: ${account}`);
-      return account;
-    } catch (err) {
-      console.log(`  ❌ Rejected for ${account}:`, err.message);
+  // Test 1: Service gmail (port 465 default)
+  console.log('Testing with host smtp.gmail.com port 465 (SSL)...');
+  const transporterSSL = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: 'fizzybutterchicken@gmail.com',
+      pass: 'eplhcnvwlkdkbtdz'
     }
+  });
+
+  try {
+    await transporterSSL.verify();
+    console.log('🎉 SUCCESS! Port 465 (SSL) verified successfully!');
+    return true;
+  } catch (err) {
+    console.log('❌ Port 465 error:', err.message);
+  }
+
+  // Test 2: Port 587 TLS
+  console.log('\nTesting with host smtp.gmail.com port 587 (TLS)...');
+  const transporterTLS = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'fizzybutterchicken@gmail.com',
+      pass: 'eplhcnvwlkdkbtdz'
+    }
+  });
+
+  try {
+    await transporterTLS.verify();
+    console.log('🎉 SUCCESS! Port 587 (TLS) verified successfully!');
+    return true;
+  } catch (err) {
+    console.log('❌ Port 587 error:', err.message);
   }
 }
 

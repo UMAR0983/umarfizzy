@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 // Hardcoded Configuration
 const GMAIL_USER = 'fizzybutterchicken@gmail.com';
-const GMAIL_APP_PASS = 'yvmssiucnnanpeb';
+const GMAIL_APP_PASS = 'eplhcnvwlkdkbtdz';
 
 function getTransporter() {
   return nodemailer.createTransport({

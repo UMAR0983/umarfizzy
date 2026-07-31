@@ -6,7 +6,7 @@ const SUPABASE_URL = 'https://drntuchxgbxullltmhih.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybnR1Y2h4Z2J4dWxsbHRtaGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTcxMTYsImV4cCI6MjEwMDUzMzExNn0.zTdr1QKl2aBTL8xd7vwgO-lLbX8UeD_af0Z6VZhLwuQ';
 const ADMIN_SECRET = 'admin123secret';
 const GMAIL_USER = 'fizzybutterchicken@gmail.com';
-const GMAIL_APP_PASS = 'yvmssiucnnanpeb';
+const GMAIL_APP_PASS = 'eplhcnvwlkdkbtdz';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
