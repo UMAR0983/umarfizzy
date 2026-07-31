@@ -203,6 +203,8 @@
     </div>
 
     <script>
+        const API_BASE = 'https://www.fizzybutterchiken.ca';
+
         function getParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
@@ -216,7 +218,7 @@
             }
 
             try {
-                const res = await fetch(`/api/get-card?id=${encodeURIComponent(id)}`);
+                const res = await fetch(`${API_BASE}/api/get-card?id=${encodeURIComponent(id)}`);
                 if (res.ok) {
                     const data = await res.json();
                     renderCard(data);
