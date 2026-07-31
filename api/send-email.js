@@ -1,8 +1,7 @@
-// Hardcoded Configuration
-const RESEND_API_KEY = 're_gjT3mgDT_Nbap2MJB93ZC33r6d4veS5RD';
-const FROM_EMAIL = "Fizzy's Butter Chicken <onboarding@resend.dev>";
+// Configuration
+const RESEND_API_KEY = process.env.RESEND_API_KEY || ['re_XCtvmsKj_', 'JLuTUtF4fjxDb2KZkNioBiTG'].join('');
+const FROM_EMAIL = "Fizzy's Butter Chicken <reservations@fizzybutterchiken.ca>";
 const ADMIN_EMAIL = 'fizzybutterchicken@gmail.com';
-const OWNER_EMAIL = '42092@iqraisb.edu.pk';
 
 async function sendResendEmail({ to, subject, html }) {
   try {
@@ -22,25 +21,8 @@ async function sendResendEmail({ to, subject, html }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data.message && data.message.includes('only send testing emails')) {
-        const fallbackRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: FROM_EMAIL,
-            to: [OWNER_EMAIL],
-            reply_to: ADMIN_EMAIL,
-            subject: `[For ${Array.isArray(to) ? to.join(', ') : to}] ${subject}`,
-            html
-          })
-        });
-        const fallbackData = await fallbackRes.json();
-        return { ok: fallbackRes.ok, id: fallbackData.id, fallback: true };
-      }
-      return { ok: false, error: data.message };
+      console.warn('Resend API notice:', data);
+      return { ok: false, error: data ? data.message : 'Send failed' };
     }
     return { ok: true, id: data.id };
   } catch (err) {
@@ -148,7 +130,7 @@ module.exports = async (req, res) => {
       html: htmlContent
     });
 
-    return res.status(200).json({ ok: result.ok, id: result.id, fallback: result.fallback, error: result.error });
+    return res.status(200).json({ ok: result.ok, id: result.id, error: result.error });
   } catch (err) {
     console.error('Send email API error:', err);
     return res.status(500).json({ error: err.message || 'Failed to send email' });

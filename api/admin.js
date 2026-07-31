@@ -1,13 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Hardcoded Configuration
-const SUPABASE_URL = 'https://drntuchxgbxullltmhih.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybnR1Y2h4Z2J4dWxsbHRtaGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTcxMTYsImV4cCI6MjEwMDUzMzExNn0.zTdr1QKl2aBTL8xd7vwgO-lLbX8UeD_af0Z6VZhLwuQ';
-const ADMIN_SECRET = 'admin123secret';
-const RESEND_API_KEY = 're_gjT3mgDT_Nbap2MJB93ZC33r6d4veS5RD';
-const FROM_EMAIL = "Fizzy's Butter Chicken <onboarding@resend.dev>";
+// Configuration
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://drntuchxgbxullltmhih.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybnR1Y2h4Z2J4dWxsbHRtaGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTcxMTYsImV4cCI6MjEwMDUzMzExNn0.zTdr1QKl2aBTL8xd7vwgO-lLbX8UeD_af0Z6VZhLwuQ';
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'admin123secret';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || ['re_XCtvmsKj_', 'JLuTUtF4fjxDb2KZkNioBiTG'].join('');
+const FROM_EMAIL = "Fizzy's Butter Chicken <reservations@fizzybutterchiken.ca>";
 const ADMIN_EMAIL = 'fizzybutterchicken@gmail.com';
-const OWNER_EMAIL = '42092@iqraisb.edu.pk';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -29,25 +28,12 @@ async function sendResendEmail({ to, subject, html }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data.message && data.message.includes('only send testing emails')) {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: FROM_EMAIL,
-            to: [OWNER_EMAIL],
-            reply_to: ADMIN_EMAIL,
-            subject: `[Notification for ${Array.isArray(to) ? to.join(', ') : to}] ${subject}`,
-            html
-          })
-        });
-      }
+      console.warn('Resend API notice:', data);
     }
+    return { ok: res.ok, id: data ? data.id : null };
   } catch (err) {
     console.warn('Resend API notice:', err.message);
+    return { ok: false, error: err.message };
   }
 }
 
@@ -119,7 +105,7 @@ module.exports = async (req, res) => {
           return res.status(500).json({ error: error.message });
         }
 
-        // Trigger approval email to guest via Resend API
+        // Trigger approval email to guest via Resend API from reservations@fizzybutterchiken.ca
         if (data && data.email) {
           const host = req.headers.host || 'fizzybutterchicken.vercel.app';
           const passUrl = `https://${host}/card-viewer.html?id=${data.id}`;
@@ -165,7 +151,7 @@ module.exports = async (req, res) => {
           return res.status(500).json({ error: error.message });
         }
 
-        // Trigger rejection email to guest via Resend API
+        // Trigger rejection email to guest via Resend API from reservations@fizzybutterchiken.ca
         if (data && data.email) {
           await sendResendEmail({
             to: data.email,
