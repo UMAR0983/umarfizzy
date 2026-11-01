@@ -160,7 +160,7 @@
         <p class="desc">Book your dining experience at Fizzy's Butter Chicken</p>
 
         <div class="meta-chips">
-            <div class="chip">Tue–Thu 11am–8pm · Fri–Sun 11am–9pm · Mon Closed</div>
+            <div class="chip">Tue–Thu &amp; Sun 11am–8pm · Fri–Sat 11am–9pm · Mon Closed</div>
             <div class="chip">Party Size 1–9+ Guests</div>
             <div class="chip">(705) 746-0505</div>
         </div>
@@ -274,7 +274,7 @@
             <div class="closed-label">Notice</div>
             <h3>Dear Customers,</h3>
             <p>On <strong>Mondays</strong> we are closed.<br>Please choose another day, we would love to host you!</p>
-            <div class="closed-hours">Tue – Thu: 11 AM – 8 PM &nbsp;·&nbsp; Fri – Sun: 11 AM – 9 PM</div>
+            <div class="closed-hours">Tue – Thu &amp; Sun: 11 AM – 8 PM &nbsp;·&nbsp; Fri – Sat: 11 AM – 9 PM</div>
             <button type="button" id="closedOk">Choose Another Date</button>
         </div>
     </div>
@@ -286,17 +286,17 @@
         const submitBtn = document.getElementById('submitBtn');
         const logConsole = document.getElementById('logConsole');
 
-        // ---- Opening hours: Mon closed, Tue-Thu 11-8, Fri-Sun 11-9 ----
+        // ---- Opening hours: Mon closed, Tue-Thu & Sun 11-8, Fri-Sat 11-9 ----
         const closedOverlay = document.getElementById('closedOverlay');
         const reserveDate = document.getElementById('reserveDate');
         const reserveTime = document.getElementById('reserveTime');
 
         function closeClosedPopup() { closedOverlay.classList.remove('show'); }
 
-        // Hide late slots on Tue-Thu (close 8 PM)
+        // Hide late slots on Tue-Thu and Sunday (close 8 PM)
         function updateTimeSlots(day) {
             const lateSlots = ['8:30 PM', '9:00 PM'];
-            const hideLate = (day >= 2 && day <= 4);
+            const hideLate = (day === 0 || (day >= 2 && day <= 4)); // Sun, Tue, Wed, Thu
             Array.from(reserveTime.options).forEach(opt => {
                 if (lateSlots.includes(opt.value)) {
                     opt.hidden = hideLate;
