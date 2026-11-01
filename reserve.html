@@ -252,6 +252,10 @@
         const guestNameInput = document.getElementById('guestName');
         const cardHolderName = document.getElementById('cardHolderName');
         const reserveForm = document.getElementById('reserveForm');
+        document.getElementById('reserveDate').addEventListener('change', e => {
+    const d = new Date(e.target.value + 'T00:00:00').getDay(); // 1 = Monday
+    if (d === 1) { alert('Monday ko hum closed hain'); e.target.value = ''; }
+});
         const submitBtn = document.getElementById('submitBtn');
         const logConsole = document.getElementById('logConsole');
 
