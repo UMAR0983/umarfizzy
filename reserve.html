@@ -113,6 +113,24 @@
             .configurator { padding: 24px 16px; margin: 24px 12px; }
             .hero h1 { font-size: 28px; }
         }
+        /* Monday Closed Popup */
+        .closed-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
+            display: none; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
+        .closed-overlay.show { display: flex; }
+        .closed-card { width: 100%; max-width: 400px; text-align: center; padding: 40px 32px;
+            background: linear-gradient(135deg, #241d17 0%, #14100D 100%); border: 1px solid var(--gold);
+            border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(237,230,218,.08);
+            animation: closedPop .35s ease; }
+        @keyframes closedPop { from { opacity: 0; transform: translateY(20px) scale(.95); } to { opacity: 1; transform: none; } }
+        .closed-icon { font-size: 44px; margin-bottom: 8px; }
+        .closed-label { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+        .closed-card h3 { font-size: 26px; margin: 0 0 12px; }
+        .closed-card p { color: var(--ivory-dim); font-size: 15px; margin: 0 0 20px; }
+        .closed-card p strong { color: var(--gold); }
+        .closed-hours { font-size: 12px; color: var(--ivory-dim); border-top: 1px solid var(--line); padding-top: 16px; margin-bottom: 24px; }
+        .closed-card button { width: 100%; padding: 14px; background: var(--gold); color: var(--bg); border: none;
+            font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+        .closed-card button:hover { background: var(--gold-soft); }
     </style>
 </head>
 <body>
@@ -142,7 +160,7 @@
         <p class="desc">Book your dining experience at Fizzy's Butter Chicken</p>
 
         <div class="meta-chips">
-            <div class="chip">Hours 12:00 Noon–9pm</div>
+            <div class="chip">Tue–Thu 11am–8pm · Fri–Sun 11am–9pm · Mon Closed</div>
             <div class="chip">Party Size 1–9+ Guests</div>
             <div class="chip">(705) 746-0505</div>
         </div>
@@ -189,6 +207,8 @@
                         <label for="reserveTime">Time</label>
                         <select id="reserveTime" name="time" class="form-control" required>
                             <option value="" disabled selected>Select a time</option>
+                            <option value="11:00 AM">11:00 AM</option>
+<option value="11:30 AM">11:30 AM</option>
                             <option value="12:00 PM">12:00 PM</option>
 <option value="12:30 PM">12:30 PM</option>
 <option value="1:00 PM">1:00 PM</option>
@@ -248,16 +268,66 @@
         &copy; 2026 Fizzy's Butter Chicken. All rights reserved. 36 James Street, Parry Sound, Ontario.
     </footer>
 
+    <div class="closed-overlay" id="closedOverlay">
+        <div class="closed-card">
+            <div class="closed-icon">🌙</div>
+            <div class="closed-label">Notice</div>
+            <h3>Dear Customers,</h3>
+            <p>On <strong>Mondays</strong> we are closed.<br>Please choose another day, we would love to host you!</p>
+            <div class="closed-hours">Tue – Thu: 11 AM – 8 PM &nbsp;·&nbsp; Fri – Sun: 11 AM – 9 PM</div>
+            <button type="button" id="closedOk">Choose Another Date</button>
+        </div>
+    </div>
+
     <script>
         const guestNameInput = document.getElementById('guestName');
         const cardHolderName = document.getElementById('cardHolderName');
         const reserveForm = document.getElementById('reserveForm');
-        document.getElementById('reserveDate').addEventListener('change', e => {
-    const d = new Date(e.target.value + 'T00:00:00').getDay(); // 1 = Monday
-    if (d === 1) { alert('Monday ko hum closed hain'); e.target.value = ''; }
-});
         const submitBtn = document.getElementById('submitBtn');
         const logConsole = document.getElementById('logConsole');
+
+        // ---- Opening hours: Mon closed, Tue-Thu 11-8, Fri-Sun 11-9 ----
+        const closedOverlay = document.getElementById('closedOverlay');
+        const reserveDate = document.getElementById('reserveDate');
+        const reserveTime = document.getElementById('reserveTime');
+
+        function closeClosedPopup() { closedOverlay.classList.remove('show'); }
+
+        // Hide late slots on Tue-Thu (close 8 PM)
+        function updateTimeSlots(day) {
+            const lateSlots = ['8:30 PM', '9:00 PM'];
+            const hideLate = (day >= 2 && day <= 4);
+            Array.from(reserveTime.options).forEach(opt => {
+                if (lateSlots.includes(opt.value)) {
+                    opt.hidden = hideLate;
+                    opt.disabled = hideLate;
+                }
+            });
+            if (hideLate && lateSlots.includes(reserveTime.value)) reserveTime.value = '';
+        }
+
+        function checkDate() {
+            if (!reserveDate.value) return;
+            const day = new Date(reserveDate.value + 'T00:00:00').getDay(); // 1 = Monday
+            if (day === 1) {
+                reserveDate.value = '';
+                closedOverlay.classList.add('show');
+                return;
+            }
+            updateTimeSlots(day);
+        }
+
+        reserveDate.addEventListener('change', checkDate);
+        document.getElementById('closedOk').addEventListener('click', closeClosedPopup);
+        closedOverlay.addEventListener('click', e => { if (e.target === closedOverlay) closeClosedPopup(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeClosedPopup(); });
+
+        // Safety net on submit
+        reserveForm.addEventListener('submit', e => {
+            if (reserveDate.value && new Date(reserveDate.value + 'T00:00:00').getDay() === 1) {
+                e.preventDefault(); e.stopImmediatePropagation(); checkDate();
+            }
+        }, true);
 
         // Live update card name preview
         guestNameInput.addEventListener('input', (e) => {
